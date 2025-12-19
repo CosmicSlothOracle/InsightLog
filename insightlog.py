@@ -132,26 +132,37 @@ def check_match(line, filter_pattern, is_regex=False, is_casesensitive=True, is_
     return check_result
 
 
-def filter_data(log_filter, data=None, filepath=None, is_casesensitive=True, is_regex=False, is_reverse=False):
+def filter_data(
+    log_filter,
+    data=None,
+    filepath=None,
+    is_casesensitive=True,
+    is_regex=False,
+    is_reverse=False
+):
     """Filter received data/file content and return the results"""
-    return_data = ""
-    if filepath:
+
+    result = []
+
+    if filepath is not None:
         try:
             with open(filepath, 'r') as file_object:
                 for line in file_object:
                     if check_match(line, log_filter, is_regex, is_casesensitive, is_reverse):
-                        return_data += line
-            return return_data
-        except (IOError, EnvironmentError) as e:
-            print(e.strerror)
-            return None
-    elif data:
+                        result.append(line)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"File not found: {filepath}") from e
+
+    elif data is not None:
         for line in data.splitlines():
             if check_match(line, log_filter, is_regex, is_casesensitive, is_reverse):
-                return_data += line+"\n"
-        return return_data
+                result.append(line + "\n")
+
     else:
-        raise Exception("Data and filepath values are NULL!")
+        raise ValueError("Either data or filepath must be provided")
+
+    return "".join(result)
+
 
 
 def _get_iso_datetime(str_date, pattern, keys):
