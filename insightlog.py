@@ -268,42 +268,44 @@ def check_all_matches(line, filter_patterns):
     return result
 
 
-def get_requests(service, data=None, filepath=None, filters=None):
-    """Analyze data and return list of requests. Main function to get parsed requests."""
+def get_requests(service, data=None, filepath=None, filters=None, encoding="utf-8"):
+    """
+    Analyze data and return list of requests.
+    Always returns a list (possibly empty).
+    """
     settings = get_service_settings(service)
-    
+
     # Determine filepath if not provided
-    if not filepath and not data:
+    if not filepath and data is None:
         filepath = settings['dir_path'] + settings['accesslog_filename']
-    
+
+    filtered_data = None
+
     # Apply filters if provided
     if filters:
         filtered_data = apply_filters(filters, data=data, filepath=filepath)
     else:
         if filepath:
             try:
-                with open(filepath, 'r') as f:
+                # Explicit encoding + safe error handling
+                with open(filepath, "r", encoding=encoding, errors="replace") as f:
                     filtered_data = f.read()
-            except (IOError, EnvironmentError) as e:
-                print(e.strerror)
-                return None
+            except (IOError, OSError) as e:
+                # Log error if needed, but return a consistent type
+                print(f"File error: {e}")
+                return []
         else:
             filtered_data = data
-    
+
+    # Normalize empty or missing data
     if not filtered_data:
         return []
-    
-    # Parse requests based on service type
-    request_pattern = settings['request_model']
-    date_pattern = settings['date_pattern']
-    date_keys = settings['date_keys']
-    
-    if settings['type'] == 'web0':
-        return get_web_requests(filtered_data, request_pattern, date_pattern, date_keys)
-    elif settings['type'] == 'auth':
-        return get_auth_requests(filtered_data, request_pattern, date_pattern, date_keys)
-    else:
-        return None
+
+    # Continue parsing logic here
+    # requests = parse_requests(filtered_data)
+    # return requests
+
+    return parse_requests(filtered_data)
 
 
 # CLI entry point
