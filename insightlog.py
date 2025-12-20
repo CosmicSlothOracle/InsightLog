@@ -99,28 +99,45 @@ def get_service_settings(service_name):
         raise Exception("Service \""+service_name+"\" doesn't exists!")
 
 
-def get_date_filter(settings, minute='*', hour='*', day=None, month=None, year=None):
-    now = datetime.now()
-    # Defaults for date parts only (not wildcards)
-    day = now.day if day is None else int(day)
-    month = now.month if month is None else int(month)
-    year = now.year if year is None else int(year)
+def get_date_filter(
+    settings,
+    minute='*',
+    hour='*',
+    day=None,
+    month=None,
+    year=None
+):
+    """Get the date pattern that can be used to filter data from logs based on the params"""
 
-    service = settings.get("service")
-    month_str = datetime(year, month, day).strftime('%b')
-    # nginx / apache2 format
-    if service in ("nginx", "apache2"):
-        base = f"[{day:02d}/{month_str}/{year}"
-        if minute == '*' or hour == '*':
-            return base
-        return f"{base}:{int(hour):02d}:{int(minute):02d}"
-    # auth format
-    if service == "auth":
-        base = f"{month_str} {day:02d} "
-        if minute == '*' or hour == '*':
-            return base
-        return f"{base}{int(hour):02d}:{int(minute):02d}:"
-    raise ValueError("Unsupported service")
+    now = datetime.now()
+
+    day = day if day is not None else now.day
+    month = month if month is not None else now.month
+    year = year if year is not None else now.year
+
+    # Validate only if not wildcard
+    if minute != '*' and not is_valid_minute(minute):
+        raise Exception("Minute isn't valid")
+
+    if hour != '*' and not is_valid_hour(hour):
+        raise Exception("Hour isn't valid")
+
+    if not is_valid_day(day) or not is_valid_month(month) or not is_valid_year(year):
+        raise Exception("Date elements aren't valid")
+
+    if minute != '*' and hour != '*':
+        date_format = settings['dateminutes_format']
+        return datetime(year, month, day, hour, minute).strftime(date_format)
+
+    if minute == '*' and hour != '*':
+        date_format = settings['datehours_format']
+        return datetime(year, month, day, hour).strftime(date_format)
+
+    if minute == '*' and hour == '*':
+        date_format = settings['datedays_format']
+        return datetime(year, month, day).strftime(date_format)
+
+    raise Exception("Date elements aren't valid")
 
 def check_match(line, filter_pattern, is_regex=False, is_casesensitive=True, is_reverse=False):
     """Check if line contains/matches filter pattern"""
