@@ -99,26 +99,45 @@ def get_service_settings(service_name):
         raise Exception("Service \""+service_name+"\" doesn't exists!")
 
 
-def get_date_filter(settings, minute=datetime.now().minute, hour=datetime.now().hour,
-                    day=datetime.now().day, month=datetime.now().month,
-                    year=datetime.now().year):
+def get_date_filter(
+    settings,
+    minute='*',
+    hour='*',
+    day=None,
+    month=None,
+    year=None
+):
     """Get the date pattern that can be used to filter data from logs based on the params"""
-    if not is_valid_year(year) or not is_valid_month(month) or not is_valid_day(day) \
-            or not is_valid_hour(hour) or not is_valid_minute(minute):
+
+    now = datetime.now()
+
+    day = day if day is not None else now.day
+    month = month if month is not None else now.month
+    year = year if year is not None else now.year
+
+    # Validate only if not wildcard
+    if minute != '*' and not is_valid_minute(minute):
+        raise Exception("Minute isn't valid")
+
+    if hour != '*' and not is_valid_hour(hour):
+        raise Exception("Hour isn't valid")
+
+    if not is_valid_day(day) or not is_valid_month(month) or not is_valid_year(year):
         raise Exception("Date elements aren't valid")
+
     if minute != '*' and hour != '*':
         date_format = settings['dateminutes_format']
-        date_filter = datetime(year, month, day, hour, minute).strftime(date_format)
-    elif minute == '*' and hour != '*':
-        date_format = settings['datehours_format']
-        date_filter = datetime(year, month, day, hour).strftime(date_format)
-    elif minute == '*' and hour == '*':
-        date_format = settings['datedays_format']
-        date_filter = datetime(year, month, day).strftime(date_format)
-    else:
-        raise Exception("Date elements aren't valid")
-    return date_filter
+        return datetime(year, month, day, hour, minute).strftime(date_format)
 
+    if minute == '*' and hour != '*':
+        date_format = settings['datehours_format']
+        return datetime(year, month, day, hour).strftime(date_format)
+
+    if minute == '*' and hour == '*':
+        date_format = settings['datedays_format']
+        return datetime(year, month, day).strftime(date_format)
+
+    raise Exception("Date elements aren't valid")
 
 def check_match(line, filter_pattern, is_regex=False, is_casesensitive=True, is_reverse=False):
     """Check if line contains/matches filter pattern"""
