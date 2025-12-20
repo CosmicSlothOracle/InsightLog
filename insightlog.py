@@ -99,25 +99,28 @@ def get_service_settings(service_name):
         raise Exception("Service \""+service_name+"\" doesn't exists!")
 
 
-
-def get_date_filter(minute=None, hour=None):
-    try:
-        if minute == '*':
-            minute = None
-        elif minute is not None:
-            minute = int(minute)
-        if hour == '*':
-            hour = None
-        elif hour is not None:
-            hour = int(hour)
-    except (TypeError, ValueError):
-        raise ValueError("minute and hour must be integers or '*'")
+def get_date_filter(settings, minute='*', hour='*', day=None, month=None, year=None):
     now = datetime.now()
-    if minute is not None and minute != now.minute:
-        return False
-    if hour is not None and hour != now.hour:
-        return False
-    return True
+    # Defaults for date parts only (not wildcards)
+    day = now.day if day is None else int(day)
+    month = now.month if month is None else int(month)
+    year = now.year if year is None else int(year)
+
+    service = settings.get("service")
+    month_str = datetime(year, month, day).strftime('%b')
+    # nginx / apache2 format
+    if service in ("nginx", "apache2"):
+        base = f"[{day:02d}/{month_str}/{year}"
+        if minute == '*' or hour == '*':
+            return base
+        return f"{base}:{int(hour):02d}:{int(minute):02d}"
+    # auth format
+    if service == "auth":
+        base = f"{month_str} {day:02d} "
+        if minute == '*' or hour == '*':
+            return base
+        return f"{base}{int(hour):02d}:{int(minute):02d}:"
+    raise ValueError("Unsupported service")
 
 def check_match(line, filter_pattern, is_regex=False, is_casesensitive=True, is_reverse=False):
     """Check if line contains/matches filter pattern"""
