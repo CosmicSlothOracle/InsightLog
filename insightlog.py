@@ -146,23 +146,19 @@ def filter_data(
 
     if filepath is not None:
         try:
-            with open(filepath, 'r') as file_object:
+            with open(filepath, 'r', encoding='utf-8', errors='replace') as file_object:
                 for line in file_object:
                     if check_match(line, log_filter, is_regex, is_casesensitive, is_reverse):
                         result.append(line)
         except FileNotFoundError as e:
             raise FileNotFoundError(f"File not found: {filepath}") from e
-
     elif data is not None:
         for line in data.splitlines():
             if check_match(line, log_filter, is_regex, is_casesensitive, is_reverse):
                 result.append(line + "\n")
-
     else:
         raise ValueError("Either data or filepath must be provided")
-
     return "".join(result)
-
 
 
 def _get_iso_datetime(str_date, pattern, keys):
