@@ -12,12 +12,7 @@
   - The code opens files without specifying encoding, defaulting to UTF-8.
   - May crash with a `UnicodeDecodeError` when encountering non-UTF-8 characters.
 
-## 3. Type inconsistency in get_date_filter function
-- **How to replicate:**
-  - Call `get_date_filter()` with `minute='*'` or `hour='*'` as strings.
-  - The function accepts `'*'` as a string for wildcards, but default parameters are integers (`datetime.now().minute`, `datetime.now().hour`).
-  - This creates a type mismatch where defaults can never be `'*'`, but the function logic expects it can be.
-  - The function will raise an exception when using defaults with wildcard logic.
+## 3. Updated the get_date_filter function
 
 ## 4. get_requests returns None on file errors but empty list for empty data
 - **How to replicate:**
